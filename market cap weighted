@@ -1,0 +1,40 @@
+import yfinance as yf
+import datetime
+import pandas as pd
+
+# Define stocks and time range
+stocks = ['AAPL', 'META', 'MSFT', 'GOOGL']
+end_date = datetime.datetime.now()
+start_date = end_date - datetime.timedelta(days=2*365)
+
+# Fetch the data
+stock_data = yf.download(stocks, start=start_date, end=end_date)
+
+# Calculate daily returns
+daily_returns = stock_data['Adj Close'].pct_change()
+
+# Calculate market cap weighted portfolio returns
+market_caps = {}
+for stock in stocks:
+    info = yf.Ticker(stock).info
+    market_cap = info['marketCap']
+    market_caps[stock] = market_cap
+
+total_market_cap = sum(market_caps.values())
+weights = {stock: market_cap / total_market_cap for stock, market_cap in market_caps.items()}
+portfolio_returns = (daily_returns * pd.Series(weights)).sum(axis=1)
+
+# Calculate statistics for each stock
+stock_stats = pd.DataFrame(index=['Average', 'Standard Deviation', 'Skewness', 'Kurtosis'])
+for stock in stocks:
+    stock_stats[stock] = [daily_returns[stock].mean(), daily_returns[stock].std(), daily_returns[stock].skew(), daily_returns[stock].kurtosis()]
+
+# Calculate statistics for the portfolio
+portfolio_stats = pd.DataFrame(index=['Average', 'Standard Deviation', 'Skewness', 'Kurtosis'])
+portfolio_stats['Portfolio'] = [portfolio_returns.mean(), portfolio_returns.std(), portfolio_returns.skew(), portfolio_returns.kurtosis()]
+
+# Combine stock and portfolio statistics into one table
+combined_stats = pd.concat([stock_stats, portfolio_stats], axis=1)
+
+# Print combined statistics table
+print(combined_stats)

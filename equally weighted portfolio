@@ -1,0 +1,58 @@
+pip install yfinance
+import pandas_datareader as pdr
+import datetime
+import yfinance as yf
+
+stocks = ['AAPL', 'META', 'MSFT']
+end_date = datetime.datetime.now()
+start_date = end_date - datetime.timedelta(days=2*365)
+stock_data = yf.download(stocks, start=start_date, end=end_date)
+
+print(stock_data.head())
+
+daily_returns = stock_data['Adj Close'].pct_change()
+
+print(daily_returns.head())
+
+stats = daily_returns.describe()
+skewness = daily_returns.skew()
+kurtosis = daily_returns.kurtosis()
+
+print("Statistics:")
+print(stats)
+print("\nSkewness:")
+print(skewness)
+print("\nKurtosis:")
+print(kurtosis)
+
+# Calculate correlation matrix
+correlation_matrix = daily_returns.corr()
+
+# Calculate covariance matrix
+covariance_matrix = daily_returns.cov()
+
+print("Correlation Matrix:")
+print(correlation_matrix)
+
+print("\nCovariance Matrix:")
+print(covariance_matrix)
+
+# Calculate equally weighted portfolio returns
+num_stocks = len(stocks)
+weights = {stock: 1/num_stocks for stock in stocks}  # Equal weights
+portfolio_returns = (daily_returns * pd.Series(weights)).sum(axis=1)
+
+# Calculate statistics for each stock
+stock_stats = pd.DataFrame(index=['Average', 'Standard Deviation', 'Skewness', 'Kurtosis'])
+for stock in stocks:
+    stock_stats[stock] = [daily_returns[stock].mean(), daily_returns[stock].std(), daily_returns[stock].skew(), daily_returns[stock].kurtosis()]
+
+# Calculate statistics for the portfolio
+portfolio_stats = pd.DataFrame(index=['Average', 'Standard Deviation', 'Skewness', 'Kurtosis'])
+portfolio_stats['Portfolio'] = [portfolio_returns.mean(), portfolio_returns.std(), portfolio_returns.skew(), portfolio_returns.kurtosis()]
+
+# Combine stock and portfolio statistics into one table
+combined_stats = pd.concat([stock_stats, portfolio_stats], axis=1)
+
+# Print combined statistics table
+print(combined_stats)
